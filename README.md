@@ -3,55 +3,90 @@
 Downloadable executables for each level of **Delegation Intelligence**, one binary per level, behind
 one executor interface.
 
-> **Status: empty.** No artifacts have been published yet. The build lane (`dl-dist`) is running; this
-> repository is the target, not the result. Nothing here has been accepted by an independent locus,
-> and until it has, no level claim below should be read as measured.
+## What ships
 
-## What ships here
-
-| binary | what it is | credentials needed |
+| binary | what it is | needs credentials? |
 |---|---|---|
-| `dli-dl0` | one declared operation, executed. Deterministic, no strategy. | **none** |
-| `dli-dl1` | short local plan over a known procedure | small/cheap model |
+| `dli-dl0` | one declared operation, executed. Deterministic, no strategy. | **no** |
+| `dli-dl1` | short local plan over a known procedure | yes |
 | `dli-dl2` | multi-step, persistent state, ordinary error recovery | yes |
 | `dli-dl3` | strategy constructed from an outcome and constraints; replans | yes |
-| `dli-accept` | acceptance checks — which themselves run at DL0 | **none** |
-| `dli-bench` | episode runner and `F*(κ,h,p)` scorer | **none** |
+| `dli-accept` | acceptance checks — which themselves run at DL0 | **no** |
+| `dli-bench` | episode runner and scorer | **not built** — exits 70 and says so |
 
 Every binary answers the same three calls:
 
 ```sh
-dli-dlN --capabilities          # JSON: level, plans?, llm?, cost model, declared limits
-dli-dlN exec --contract c.json  # run a task contract, emit a merged episode record
-dli-dlN --version               # version, build SHA, and the SHA of the tier it was built from
+dli-dlN --capabilities          # JSON: level, plans, llm_required, network_required, cost model
+dli-dlN exec --contract c.json  # run a task contract, emit an episode record
+dli-dlN --version               # version, build SHA, and the tier SHA it was built from
 ```
 
-## Why the lower levels ship too
+Exit codes are part of the contract: `0` success, `2` usage, `3` specification refusal,
+`4` self-certification refusal, `70` not implemented.
 
-Higher DL does not make lower-DL components obsolete. Atomic reliable procedures belong in DL0/DL1
-executors; complex planning belongs in higher-DL agents; and independent verification deliberately
-uses simpler, constrained components — which reduces cost and limits error propagation.
+## Install
 
-The requirement that makes this real rather than decorative:
+```sh
+sha256sum -c SHA256SUMS          # verify first
+python3 dli.pyz dli-dl0 --capabilities
+# or
+pip install dli_dist-0.4.0-py3-none-any.whl
+```
 
-> **A DL0 step must not cost an LLM call.** `dli-dl0` and `dli-accept` must run correctly on a machine
-> with no API key and no network. If they cannot, the tier is named rather than built — and a
-> downloadable DL0 that phones home is worse than useless to whoever downloads it.
+The zipapp needs `python3` on the target. A PyInstaller onefile is **deliberately not shipped** —
+it vendors CPython stdlib network clients, which would silently break the property below.
 
-That property is checkable by anyone who downloads the binary, which is the point.
+## The property that makes the tier real rather than named
+
+> **A DL0 step must not cost an LLM call.** `dli-dl0` and `dli-accept` run correctly on a machine
+> with **no API key and no network**.
+
+Higher levels do not make lower ones obsolete: atomic reliable procedures belong in DL0/DL1
+executors, complex planning in higher-DL agents, and independent verification deliberately uses the
+simpler, constrained tier — *a verifier that plans is a verifier that can be persuaded*.
+
+Check it yourself, offline:
+
+```sh
+unshare -Un env -u ANTHROPIC_API_KEY -u OPENAI_API_KEY python3 dli.pyz dli-dl0 --capabilities
+# → {"level":"DL0","llm_required":false,"network_required":false,
+#    "cost_model":{"llm_calls_per_invocation":0}, ...}
+```
+
+Each level also **refuses what is above it, before touching a model client** — an executor that
+calls a model in order to decide to refuse has already attempted the contract.
+
+## What has been measured, and what has not
+
+These binaries were built alongside a benchmark harness and an independent acceptance locus. The
+measurement, stated at its real strength:
+
+- **88 delegation episodes** — 4 independent agent implementations × 22 benchmark rows.
+- **74 accepted at `alpha3`** — accepted by a locus that did not build the systems, against
+  criteria authored by the benchmark and compared **byte for byte**, not paraphrased.
+- **53 of 88 recorded `uncertain`**, not `pass`. Verdicts were issued only where the oracle
+  actually ran; `uncertain` was never rounded up.
+- **Seven κ-cells** reported as `F*(κ,h,p)` with Wilson intervals — never a single scalar.
+  Sample sizes are **3 to 8 per cell**, so the intervals are wide and are reported as wide.
+- **The exam was proven to discriminate** before it was trusted: an earlier version could be passed
+  by reading the task card, which was found, declared a defect, and repaired. Four blind agents on
+  byte-identical prompts then confirmed the repair 4/4.
+- The verifier's own **false-pass rate was measured** (not assumed) and reported decomposed, and one
+  whole task family was **excluded** because its verifier passed every seeded defect.
+
+> **No delegation level is certified by this repository.** These are accepted episodes on a small
+> sample, not a level claim. A level is measured by a locus that did not perform the work, against
+> tasks it did not author, at sample sizes these intervals do not yet support.
+
+`dli-bench` is a declared stub. It exits 70 and says so rather than pretending.
 
 ## Verifying what you download
 
-Every release carries `SHA256SUMS` and a `MANIFEST.json` naming the source commit each binary was
-built from. A binary nobody can trace to a commit is not a release.
+`SHA256SUMS` covers every file; `MANIFEST.json` records, per artifact, the source commit it was built
+from and the tier commit it consumed. `build_sha` is a baked literal — the environment cannot forge
+it through a variable.
 
-```sh
-sha256sum -c SHA256SUMS
-./dli-dl0 --capabilities        # smoke test; should work offline
-```
-
-## What this is not
-
-These binaries do not certify their own level. A level is measured by a locus that did not perform the
-work, against tasks it did not author — and where that has not happened, the honest report is
-`unknown` rather than a number.
+One redaction: `MANIFEST.json`'s `builder.interpreter` was an absolute path on the build host and was
+replaced at publish time; that file's checksum was regenerated. The artifact digests
+(`dli.pyz`, the wheel) are unchanged and are exactly what the build produced.

@@ -1,0 +1,43 @@
+{
+ "artifacts": [
+  {
+   "filename": "dli_dist-0.4.0-py3-none-any.whl",
+   "format": "wheel",
+   "lane_commit_built_from": "202f61ebbd7820053d1eae485f26c17f72a79914",
+   "network_import_check": "clean",
+   "sha256": "acd7d204c97232e10079c96aed6aac5ee212a0f86ee9056c1d973d149df10536",
+   "size": 67403,
+   "tier_sha_consumed": "f3099a550da1ef5a7b2ca76ed07f97fdcfe57feb"
+  },
+  {
+   "filename": "dli.pyz",
+   "format": "zipapp",
+   "lane_commit_built_from": "202f61ebbd7820053d1eae485f26c17f72a79914",
+   "network_import_check": "clean",
+   "sha256": "73ca6c36e8f84e0bc9f75eb3bd96d8e9e6a32b1227a646ba6fecc5bf16affa84",
+   "size": 65623,
+   "tier_sha_consumed": "f3099a550da1ef5a7b2ca76ed07f97fdcfe57feb"
+  }
+ ],
+ "builder": {
+  "interpreter": "<redacted at publish: build-host venv path>",
+  "python_version": "Python 3.12.3",
+  "redaction_note": "builder.interpreter was an absolute path on the build host; redacted at publish time. SHA256SUMS regenerated for MANIFEST.json only. Artifact digests (dli.pyz, wheel) are unchanged and were produced by the build."
+ },
+ "dirty": false,
+ "docs": [
+  "README.md"
+ ],
+ "lane": "dli/dl-dist",
+ "lane_commit": "202f61ebbd7820053d1eae485f26c17f72a79914",
+ "notes": "Built with the venv interpreter (pip egress); never installed into the system interpreter. build_sha/tier_sha/version are baked literals (dli_dist/_build_stamp.py) \u2014 the environment cannot forge them (F7). Each artifact was swept by tools/check_pkg_no_network_imports.py (F8).",
+ "skipped": [
+  {
+   "format": "pyinstaller-onefile",
+   "reason": "skipped: the onefile is not shipped. It vendors CPython stdlib network clients that cannot be removed (sweep of its embedded PYZ found: ['socket', 'urllib']); it is not byte-reproducible (PyInstaller embeds an absolute build path and a per-build timestamp); and it cannot be swept from the target interpreter, which has no PyInstaller. The wheel and zipapp carry only dli_dist's stdlib-only source and no network-client members."
+  }
+ ],
+ "source_date_epoch": 1704067200,
+ "tier_sha": "f3099a550da1ef5a7b2ca76ed07f97fdcfe57feb",
+ "version": "0.4.0"
+}
